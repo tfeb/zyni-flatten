@@ -57,10 +57,10 @@
                            ((> cdrdepth cdrmax))
                          (when report-progress
                            (format t "."))
-                         (multiple-value-bind (implicit explicit adjust consy)
+                         (multiple-value-bind (implicit explicit adja adjb consy)
                              (funcall ts n cardepth cdrdepth :ms ms)
                            (collect `((,cardepth ,cdrdepth) ,implicit ,explicit
-                                      ,adjust ,consy))))))))
+                                      ,adja ,adjb ,consy))))))))
       (if to-file
         (with-standard-io-syntax
           (with-open-file (o to-file :direction ':output :if-exists ':supersede)
