@@ -52,11 +52,13 @@
                      (do ((cardepth carmin (+ cardepth carstep)))
                          ((> cardepth carmax))
                        (when report-progress
-                         (format t "~&car depth ~5D" cardepth))
+                         (format t "~&car depth ~5D" cardepth)
+                         (finish-output))
                        (do ((cdrdepth cdrmin (+ cdrdepth cdrstep)))
                            ((> cdrdepth cdrmax))
                          (when report-progress
-                           (format t "."))
+                           (format t ".")
+                           (finish-output))
                          (multiple-value-bind (implicit explicit adja adjb consy)
                              (funcall ts n cardepth cdrdepth :ms ms)
                            (collect `((,cardepth ,cdrdepth) ,implicit ,explicit

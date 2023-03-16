@@ -7,11 +7,12 @@
          "flatten-variants")
         :compile t))
 
-(defun bench (iters &rest args &key &allow-other-keys)
+(defun bench (iters note &rest args &key &allow-other-keys)
   (flet ((make-ldat-pathname (for)
-           (make-pathname :name (format nil "~A-~D-~A-~A"
+           (make-pathname :name (format nil "~A-~D-~@[~A-~]~A-~A"
                                         for
                                         iters
+                                        note
                                         (string-downcase
                                          (lisp-implementation-type))
                                         (string-downcase (machine-type)))
