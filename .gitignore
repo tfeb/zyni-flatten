@@ -29,3 +29,6 @@ TAGS
 *.dx32fsl
 *.dx64fsl
 
+# Ignore ldats unless they are in /data/ somewhere
+*.ldat
+!/data/**/*.ldat
