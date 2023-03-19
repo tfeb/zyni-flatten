@@ -24,7 +24,8 @@
 
 (defvar *report-timing* t)
 
-(defmacro/m timing (name (iters &key (unit ':s)) &body code)
+(defmacro/m timing (name (iters &key (unit ':s) (report '*report-timing*))
+                         &body code)
   ;; The point of this is so that TIME reports just a useful name for
   ;; the thing it is timing rather than all sorts of tedious detail
   `(flet ((,name ()
@@ -41,10 +42,21 @@
                                               ((:us :microsecond :microseconds) 1000000)
                                               ((:ns :nanosecond :nanoseconds) 1000000000)))))
                 ,@code))))
-     (if *report-timing*
+     (if ,report
          #+LispWorks(extended-time (,name))
          #-LispWorks(time (,name))
          (,name))))
+
+(defun timing-probably-sane (&key (allowed-error 0.1)
+                                  (report nil))
+  (flet ((about= (value expected)
+           (<= (* expected (- 1 allowed-error))
+               value
+               (* expected (+ 1 allowed-error)))))
+    (and (about= (timing 1s (1 :report report) (sleep 1)) 1.0)
+         (about= (timing 1s (10 :report report) (sleep 1)) 1.0)
+         (about= (timing 1s (1 :unit :ms :report report) (sleep 1)) 1000.0)
+         (about= (timing 1s (1 :unit :us :report report) (sleep 1)) 1000000.0))))
 
 (defun bench-variants (ts n &key
                          (carmin 0) (carmax 300) (carstep 10)
