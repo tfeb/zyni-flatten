@@ -13,6 +13,9 @@
 (require plot
          srfi/17)
 
+(provide
+ plot-run-data)
+
 (module+ test
   (require rackunit))
 
@@ -248,7 +251,41 @@
 (plot-font-family 'modern)
 (plot-width 560)
 
-(define (plotter-for-interpolator interpolator xs ys)
+(define (plotter-for-interpolator interpolator xs ys
+                                  #:color (color "gray")
+                                  #:label (label "plot")
+                                  #:alpha (alpha 0.5))
   (match-let ([(list _ xmin xmax) xs]
               [(list _ ymin ymax) ys])
-    (surface3d interpolator xmin xmax ymin ymax)))
+    (surface3d interpolator xmin xmax ymin ymax
+               #:style 'solid
+               #:line-style 'transparent
+               #:alpha alpha
+               #:color color
+               #:label label)))
+
+(define (plot-tree specs)
+  (for/list ([spec (in-list specs)])
+    (match-let ([(list filename plotters ...) spec])
+      (let-values ([(interpolators xs ys) (data->interpolators
+                                           (snarf filename))])
+        (for/list ([s plotters])
+          (match s
+            [(list n label color alpha)
+             (plotter-for-interpolator (list-ref interpolators n)
+                                       xs ys
+                                       #:label label
+                                       #:color color
+                                       #:alpha alpha)]
+            [(list n label color)
+             (plotter-for-interpolator (list-ref interpolators n)
+                                       xs ys
+                                       #:label label
+                                       #:color color)]))))))
+
+(define (plot-run-data specs #:unit (unit "μs") #:title (title "Performance"))
+  (plot3d (plot-tree specs)
+          #:x-label "breadth"
+          #:y-label "depth"
+          #:z-label (format "~A/call" unit)
+          #:title title))
