@@ -48,50 +48,58 @@
 ;;;; Making functions from a grid
 ;;;
 
-(define (grid-interpolator grid)
-  ;; This is just bilinear interpolation.  x is column, y is row
+(define (make-grid-interpolator grid)
+  ;; This is just bilinear interpolation.  x corresponds to the row index,
+  ;; y to the column index, so these are just equivalent to i & j but
+  ;; continuous.  The way to think of this geometrically is thst the grid has
+  ;; been rotated by pi/2 anticlockwise.
   (define-values (max-row max-column)
     (let-values ([(rows columns) (grid-dimensions grid)])
       (values (- rows 1) (- columns 1))))
   (λ (x y)
-    (unless (<= 0 x max-column)
-      (raise-range-error
-       'grid
-       "grid"
-       "" x grid 0 max-column))
-    (unless (<= 0 y max-row)
-      (raise-range-error
-       'grid
-       "grid"
-       "" y grid 0 max-row))
+    (unless (and (<= 0 x max-row)
+                 (<= 0 y max-column))
+      ;; should use range errors
+      (error 'grid "range"))
     (define-values (x0 x1 dx)
-      (let ([xi (inexact->exact x)])
-        (values (floor xi) (ceiling xi)
-                (- x (floor x)))))
+      (let* ([fx (floor x)]
+             [x0 (inexact->exact fx)])
+        (values x0 (add1 x0) (- x fx))))
     (define-values (y0 y1 dy)
-      (let ([yi (inexact->exact y)])
-        (values (floor yi) (ceiling yi)
-                (- y (floor y)))))
-    (+ (* (- 1 dx) (- 1 dy) (gref grid y0 x0))
-       (* dx (- 1 dy) (gref grid y0 x1))
-       (* (- 1 dx) dy (gref grid y1 x0))
-       (* dx dy (gref grid y1 x1)))))
+      (let* ([fy (floor y)]
+             [y0 (inexact->exact fy)])
+        (values y0 (add1 y0) (- y fy))))
+    (cond
+      ;; Deal with all the edge cases (this means plots do not lose edges)
+      [(= x0 max-row)
+       (if (= y0 max-column)
+           (gref grid x0 y0)
+           (+ (* (- 1 dy) (gref grid max-row y0))
+              (* dy (gref grid max-row y1))))]
+      [(= y0 max-column)
+       (if (= x0 max-row)
+           (gref grid x0 y0)
+           (+ (* (- 1 dx) (gref grid x0 max-column))
+              (* dx (gref grid x1 max-column))))]
+      [else
+       (+ (* (- 1 dx) (- 1 dy) (gref grid x0 y0))
+          (* dx (- 1 dy) (gref grid x1 y0))
+          (* (- 1 dx) dy (gref grid x0 y1))
+          (* dx dy (gref grid x1 y1)))])))
 
 (module+ test
-  (let* ([g (lists->grid '((0 1)
-                           (2 3)))]
-         [gf (grid-interpolator g)])
-    (let-values ([(rows columns) (grid-dimensions g)])
-      (check-eqv? rows 2)
-      (check-eqv? columns 2))
+  (let* ([gf (make-grid-interpolator
+              (lists->grid '((0 0)
+                             (1 1))))])
     (check-eqv? (gf 0 0) 0)
-    (check-eqv? (gf 0 1) 2)))
+    (check-= (gf 0.5 0) 0.5 0)))
 
 ;;;; Reading data into grids from ldat files
 ;;;
-;;; Each entry is ((cardepth cdrdepth) implicit explicit adjust consy)
-;;; car will be y, which will be row, cdr will be x which will be column
-;;; The access order is just going to be fucked up
+;;; Each entry is ((cardepth cdrdepth) vals ...)
+;;; cdr should be the x dimension, so ultimately the row index,
+;;; car should be y dimension, so ultimately the column index
+;;;
 
 (define (snarf from)
   ;; Stolen from warranted (wcs.rkt)
@@ -134,16 +142,24 @@
 
 (define (compute-extrema data)
   ;; Compute the extrema of the car & cdr depths in data
-  (for/fold ([cardepth-min 0]
-             [cardepth-max 0]
-             [cdrdepth-min 0]
-             [cdrdepth-max 0])
+  (for/fold ([cardepth-min #f]
+             [cardepth-max #f]
+             [cdrdepth-min #f]
+             [cdrdepth-max #f])
             ([line (in-list data)])
     (match-let ([(list (list cardepth cdrdepth) _ ...) line])
-      (values (min cardepth cardepth-min)
-              (max cardepth cardepth-max)
-              (min cdrdepth cdrdepth-min)
-              (max cdrdepth cdrdepth-max)))))
+      (values (if cardepth-min
+                  (min cardepth cardepth-min)
+                  cardepth)
+              (if cardepth-max
+                  (max cardepth cardepth-max)
+                  cardepth)
+              (if cdrdepth-min
+                  (min cdrdepth cdrdepth-min)
+                  cdrdepth)
+              (if cdrdepth-max
+                  (max cdrdepth cdrdepth-max)
+                  cdrdepth)))))
 
 (define (make-grid-for-data delta-cardepth delta-cdrdepth
                             cardepth-min cardepth-max
@@ -157,10 +173,10 @@
   (make-empty-grid (n delta-cdrdepth cdrdepth-min cdrdepth-max)
                    (n delta-cardepth cardepth-min cardepth-max)))
 
-(define (make-scaler dx xmin xmax #:index (index #f))
+(define (make-scaler dx xmin xmax #:indexer (indexer #f))
   ;; If scaler is true just scale the result and don't worry about
   ;; range or it being an integer.  Otherwise do.
-  (if (not index)
+  (if (not indexer)
       (λ (x) (/ (- x xmin) dx))
       (λ (x)
         (unless (<= xmin x xmax)
@@ -174,6 +190,7 @@
           index))))
 
 (define (data->grids data)
+  ;; Return the grids and their deltas & limits
   (define-values (delta-cardepth delta-cdrdepth) (compute-deltas data))
   (define-values (cardepth-min cardepth-max cdrdepth-min cdrdepth-max)
     (compute-extrema data))
@@ -184,19 +201,54 @@
                             cardepth-min cardepth-max
                             cdrdepth-min cdrdepth-max))))
   (define ixcar (make-scaler delta-cardepth cardepth-min cardepth-max
-                             #:index #t))
+                             #:indexer #t))
   (define ixcdr (make-scaler delta-cdrdepth cdrdepth-min cdrdepth-max
-                             #:index #t))
+                             #:indexer #t))
   (for ([line (in-list data)])
     (match-let ([(list (list cardepth cdrdepth) vals ...) line])
       (for ([grid (in-list grids)]
             [value (in-list vals)])
-        (set! (gref grid (ixcar cardepth) (ixcdr cardepth)) value))))
-  grids)
+        (set! (gref grid (ixcdr cdrdepth) (ixcar cardepth)) value))))
+  ;; Return in x y order
+  (values grids
+          (list delta-cdrdepth cdrdepth-min cdrdepth-max)
+          (list delta-cardepth cardepth-min cardepth-max)))
 
-;;;; Plotting grids
+(define (make-scaled-grid-function f dx xmin xmax dy ymin ymax
+                                   #:y-scale (y-scale 1))
+  ;; Make a suitable function for plotting an interpolated grid function
+  (define x-scaler (make-scaler dx xmin xmax))
+  (define y-scaler (make-scaler dy ymin ymax))
+  (λ (x y) (* y-scale (f (x-scaler x) (y-scaler y)))))
+
+(define sample-data '(((0 1) 1.0)
+                      ((0 2) 2.0)
+                      ((0 3) 3.0)
+                      ((1 1) 1.5)
+                      ((1 2) 2.5)
+                      ((1 3) 3.5)))
+
+(define (data->interpolators data)
+  ;; Return a list of interpolators and the parameters
+  (let-values ([(grids xs ys) (data->grids data)])
+    (match-let ([(list dx xmin xmax) xs]
+                [(list dy ymin ymax) ys])
+      (values (map (λ (grid)
+                     (make-scaled-grid-function
+                      (make-grid-interpolator grid)
+                      dx xmin xmax
+                      dy ymin ymax))
+                   grids)
+              xs ys))))
+
+;;;; Plotting interpolators
 ;;;
 
 ;;; Default params
 (plot-font-family 'modern)
 (plot-width 560)
+
+(define (plotter-for-interpolator interpolator xs ys)
+  (match-let ([(list _ xmin xmax) xs]
+              [(list _ ymin ymax) ys])
+    (surface3d interpolator xmin xmax ymin ymax)))
