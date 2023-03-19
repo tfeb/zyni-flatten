@@ -9,6 +9,6 @@ for impl in $IMPLS
 do
     "$impl" <<EOF
 (needs ("bench" :compile t))
-(bench $ITERS "ms" $*)
+(bench $ITERS "us" :unit :us $*)
 EOF
 done

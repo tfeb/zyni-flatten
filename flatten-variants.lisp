@@ -124,7 +124,7 @@
         (cons
          (values (car this) (cons (cdr this) agenda)))))))
 
-(defun ts/f (n car-depth cdr-depth &key (ms nil) (agenda-depth (max (1+ car-depth)
+(defun ts/f (n car-depth cdr-depth &key (unit ':s) (agenda-depth (max (1+ car-depth)
                                                                     *default-agenda-depth*))
                (adjustable-agenda-depth agenda-depth))
   (let ((s (make-car-cdr car-depth cdr-depth 1)))
@@ -136,13 +136,13 @@
                         s adjustable-agenda-depth)) cdr-depth))
     (assert (= (length (flatten/consy-stack s)) cdr-depth))
     (values
-     (timing implicit-stack (n :ms ms)
+     (timing implicit-stack (n :unit unit)
        (flatten/implicit-stack s))
-     (timing explicit-stack (n :ms ms)
+     (timing explicit-stack (n :unit unit)
        (flatten/explicit-stack s agenda-depth))
-     (timing explicit-stack/adjust (n :ms ms)
+     (timing explicit-stack/adjust (n :unit unit)
        (flatten/explicit-stack/adja s adjustable-agenda-depth))
-     (timing explicit-stack/adjust (n :ms ms)
+     (timing explicit-stack/adjust (n :unit unit)
        (flatten/explicit-stack/adjb s adjustable-agenda-depth))
-     (timing consy-stack (n :ms ms)
+     (timing consy-stack (n :unit unit)
        (flatten/consy-stack s)))))
