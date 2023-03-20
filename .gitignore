@@ -29,6 +29,9 @@ TAGS
 *.dx32fsl
 *.dx64fsl
 
+# Racket compiled files
+compiled/
+
 # Ignore ldats unless they are in /data/ somewhere
 *.ldat
 !/data/**/*.ldat
