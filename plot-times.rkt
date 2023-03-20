@@ -14,7 +14,7 @@
          srfi/17)
 
 (provide
- plot-run-data)
+ plot-specs)
 
 (module+ test
   (require rackunit))
@@ -264,7 +264,7 @@
                #:color color
                #:label label)))
 
-(define (plot-tree specs)
+(define (specs->renderer-tree specs)
   (for/list ([spec (in-list specs)])
     (match-let ([(list filename plotters ...) spec])
       (let-values ([(interpolators xs ys) (data->interpolators
@@ -283,9 +283,16 @@
                                        #:label label
                                        #:color color)]))))))
 
-(define (plot-run-data specs #:unit (unit "μs") #:title (title "Performance"))
-  (plot3d (plot-tree specs)
-          #:x-label "breadth"
-          #:y-label "depth"
-          #:z-label (format "~A/call" unit)
-          #:title title))
+(define (plot-specs specs
+                    #:unit (unit "μs")
+                    #:title (title "Performance")
+                    #:angle (angle 315)
+                    #:altitude (altitude 20)
+                    #:to (to #f))
+  ((if to (curryr plot3d-file to) plot3d) (specs->renderer-tree specs)
+                                         #:x-label "breadth"
+                                         #:y-label "depth"
+                                         #:z-label (format "~A/call" unit)
+                                         #:angle angle
+                                         #:altitude altitude
+                                         #:title title))
