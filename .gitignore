@@ -32,6 +32,9 @@ TAGS
 # Racket compiled files
 compiled/
 
+# Output SVG files
+svg/
+
 # Ignore ldats unless they are in /data/ somewhere
 *.ldat
 !/data/**/*.ldat

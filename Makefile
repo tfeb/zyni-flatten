@@ -1,6 +1,6 @@
-# Just a cleaner
+PLOTTERS = plot-20230319.rkt
 
-.PHONY: clean veryclean
+.PHONY: clean veryclean svg
 
 clean:
 	@rm -f *fasl
@@ -8,3 +8,7 @@ clean:
 
 veryclean: clean
 	@rm -f *.ldat
+	@rm -rf svg
+
+svg:
+	racket $(PLOTTERS)
