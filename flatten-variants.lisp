@@ -27,8 +27,7 @@
   (unless (consp o)
     (return-from flatten/explicit-stack o))
   (let ((agenda (make-array agenda-depth)))
-    (declare (dynamic-extent agenda)    ;?
-             (type simple-vector agenda))
+    (declare (type simple-vector agenda))
     (collecting
       (looping ((this o)
                 (depth 0))
@@ -54,8 +53,7 @@
   (unless (consp o)
     (return-from flatten/explicit-stack/adja o))
   (let ((agenda (make-array agenda-depth)))
-    (declare (dynamic-extent agenda)    ;?
-             (type simple-vector agenda))
+    (declare (type simple-vector agenda))
     (collecting
       (looping ((this o)
                 (depth 0))
@@ -86,8 +84,7 @@
                 (agenda-depth agenda-depth)
                 (current-depth 0)
                 (processing o))
-    (declare (dynamic-extent agenda)
-             (type simple-vector agenda)
+    (declare (type simple-vector agenda)
              (type array-index agenda-depth current-depth))
     (collecting
       (looping ((this processing)
