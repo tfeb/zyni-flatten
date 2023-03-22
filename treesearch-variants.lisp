@@ -163,9 +163,9 @@
       (assert (and (eql (search/explicit-stack s 1 agenda-depth) 1)
                    (not (search/explicit-stack s 2 agenda-depth))))
       (assert (and (eql (search/explicit-stack/adja s 1 adjustable-agenda-depth) 1)
-                   (not (search/explicit-stack s 2 adjustable-agenda-depth))))
+                   (not (search/explicit-stack/adja s 2 adjustable-agenda-depth))))
       (assert (and (eql (search/explicit-stack/adjb s 1 adjustable-agenda-depth) 1)
-                   (not (search/explicit-stack s 2 adjustable-agenda-depth))))
+                   (not (search/explicit-stack/adjb s 2 adjustable-agenda-depth))))
       (assert (and (eql (search/consy-stack s 1) 1)
                    (not (search/consy-stack s 2)))))
     (values
