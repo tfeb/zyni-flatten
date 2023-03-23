@@ -75,10 +75,9 @@
                          (when report-progress
                            (format t ".")
                            (finish-output))
-                         (multiple-value-bind (implicit explicit adja adjb consy)
-                             (funcall ts n cardepth cdrdepth :unit unit)
-                           (collect `((,cardepth ,cdrdepth) ,implicit ,explicit
-                                      ,adja ,adjb ,consy))))))))
+                         (collect `((,cardepth ,cdrdepth)
+                                    ,@(multiple-value-list
+                                       (funcall ts n cardepth cdrdepth :unit unit)))))))))
       (if to-file
         (with-standard-io-syntax
           (with-open-file (o to-file :direction ':output :if-exists ':supersede)

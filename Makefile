@@ -1,4 +1,4 @@
-PLOTTERS = plot-20230319.rkt
+PLOTTERS = plot-20230319.rkt plot-20230323.rkt
 
 .PHONY: clean veryclean svg
 
@@ -11,4 +11,4 @@ veryclean: clean
 	@rm -rf svg
 
 svg:
-	racket $(PLOTTERS)
+	for file in $(PLOTTERS); do racket "$$file"; done
